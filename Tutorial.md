@@ -42,13 +42,19 @@ Add an empty game object as a child of the canvas we just added calling this `Sp
   [SerializeField] float maxSpeed = 150;
 ```
 
-- Also we need another two variables to control the minimum and maximum angles our needle will turn, and where our speed labels will generate...
+- We need two variables to control the minimum and maximum angles our needle will turn, and where our speed labels will generate...
 ```
   [SerializeField] float minNeedleAngle = 130f;
   [SerializeField] float maxNeedleAngle = -130f;
 ```
 
-3. Now let's add functionality to the speedometer needle
+- Also we need another to variables to reference and control the needle and speed label template game objects
+```
+  [SerializeField] Transform needlePivot;
+  [SerializeField] GameObject speedLabelTemplate;
+```
+
+2. Now let's add functionality to the speedometer needle
 
 - We need to create a method to calculate an angle between the minimum and maximum relative to the speed for the needle...
 ```
@@ -62,4 +68,12 @@ float GetSpeedRotation(float speed, float maxSpeed)
     }
 ```
 
-- We need to add another variable
+- Now in the update method we can use the method we just created to rotate the needle relative to the speed...
+```
+void Update()
+{
+  needlePivot.eulerAngles = new Vector3(0, 0, GetSpeedRotation(CalculateSpeed(target.velocity.magnitude), maxSpeed));
+}
+```
+
+- To test the needle functionaliy we need an object with a rigidbody connected
