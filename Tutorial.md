@@ -78,10 +78,9 @@ void Update()
   
 3. Next lets develop some code to generate our speed labels
 
-- Starting off we need to add an extra variables, one being an int called `speedLabelAmount` to control how many speed labels to generate, and another being a string called `speedLabelTextElementName` to tell our script what game object to search for in our speed label template to set the correct speed increment per speed label...
+- Starting off we need to add an extra variable, an int called `speedLabelAmount` to control how many speed labels to generate
 ```
 [SerializeField] int speedLabelAmount = 15;
-[SerializeField] string speedLabelTextElementName = "speedText";
 ```
 
 - Create a new method taking an argument for the max speed to generate the speed labels...
