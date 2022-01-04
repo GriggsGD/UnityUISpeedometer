@@ -60,11 +60,11 @@ Add an empty game object as a child of the canvas we just added calling this `Sp
 ```
 float GetSpeedRotation(float speed, float maxSpeed)
     {
-        float totalAngleSize = minNeedleAngle - maxNeedleAngle;
+        float totalAngleSize = minNeedleAngle - maxNeedleAngle; // Calculates the total angle the needle can turn
 
-        float speedNormalized = speed / maxSpeed;
+        float speedNormalized = speed / maxSpeed; //Calculates a percentage to apply to the angle by dividing the max speed from the current speed, i.e Current speed = 15mph / max speed = 150mph = 10%
 
-        return speed > maxSpeed ? maxNeedleAngle : minNeedleAngle - speedNormalized * totalAngleSize;
+        return speed > maxSpeed ? maxNeedleAngle : minNeedleAngle - speedNormalized * totalAngleSize; //Outputs the method's angle result, if the current speed is over the max speed it clamps the output to the max angle to prevent the angle over shooting
     }
 ```
 
@@ -72,8 +72,86 @@ float GetSpeedRotation(float speed, float maxSpeed)
 ```
 void Update()
 {
-  needlePivot.eulerAngles = new Vector3(0, 0, GetSpeedRotation(CalculateSpeed(target.velocity.magnitude), maxSpeed));
+  needlePivot.eulerAngles = new Vector3(0, 0, GetSpeedRotation(target.velocity.magnitude * 2.23693629f, maxSpeed)); //Rotates the needle using the method we created above, reading from our target rigidbody and multiplying it to convert it to a miles per hour measure
+}
+```
+  
+3. Next lets develop some code to generate our speed labels
+
+- Starting off we need to add an extra variables, one being an int called `speedLabelAmount` to control how many speed labels to generate, and another being a string called `speedLabelTextElementName` to tell our script what game object to search for in our speed label template to set the correct speed increment per speed label...
+```
+[SerializeField] int speedLabelAmount = 15;
+[SerializeField] string speedLabelTextElementName = "speedText";
+```
+
+- Create a new method taking an argument for the max speed to generate the speed labels...
+```
+void CreateSpeedLabels(float maxSpeed){
 }
 ```
 
-- To test the needle functionaliy we need an object with a rigidbody connected
+- Inside our new method add a for loop making sure it's condition (2nd statement) is `i <= speedLabelAmount` and not just the default default operator `<` as this will prevent the last label being generated...
+```
+void CreateSpeedLabels(float maxSpeed){
+  for (int i = 0; i <= speedLabelAmount; i++){
+  }
+}
+```
+- Inside the for loop add the following code...
+```
+    GameObject speedLabel = Instantiate(speedLabelTemplate, transform); //Spawns a new speed label
+    float labelSpeedNormalized = (float)i / speedLabelAmount; //Calculates an percentage index relative to the label amount for the generated speed label to use to calculate its position and display speed
+    float speedLabelAngle = minNeedleAngle - labelSpeedNormalized * totalAngleSize; //Calculates a placement angle for the generated speed label
+    speedLabel.transform.eulerAngles = new Vector3(0, 0, speedLabelAngle); //Sets the angle to the speed label calculated above
+    speedLabel.GetComponentInChildren<Text>().text = (labelSpeedNormalized * maxSpeed).ToString("0"); //Sets the speed label speed text
+    speedLabel.GetComponentInChildren<Text>().transform.eulerAngles = Vector3.zero; //Sets the speed label test to stay upright
+    speedLabel.SetActive(true); //Sets the speed label active
+```
+
+- After the for loop inside the method we need to add code to place the speedometer needle above our speed labels, if we do not add this the needle will display underneath the speed labels, this is because our script generates new game objects at the start of playmode/when the game start which gets placed underneath our needle in the hierarchy, UI is rendered from top to bottom meaning the last item in the hierarchy of the UI canvas is rendered on top.
+
+The whole method for generating our speed labels should look like the snippet below...
+```
+void CreateSpeedLabels(float maxSpeed)
+    {
+        float totalAngleSize = minNeedleAngle - maxNeedleAngle;
+
+        for (int i = 0; i <= speedLabelAmount; i++)
+        {
+            GameObject speedLabel = Instantiate(speedLabelTemplate, transform);
+            float labelSpeedNormalized = (float)i / speedLabelAmount;
+            float speedLabelAngle = minNeedleAngle - labelSpeedNormalized * totalAngleSize;
+            speedLabel.transform.eulerAngles = new Vector3(0, 0, speedLabelAngle);
+            speedLabel.GetComponentInChildren<Text>().text = (labelSpeedNormalized * maxSpeed).ToString("0");
+            speedLabel.GetComponentInChildren<Text>().transform.eulerAngles = Vector3.zero;
+            speedLabel.SetActive(true);
+        }
+
+        needlePivot.SetAsLastSibling();
+    }
+```
+
+- Now create an `Awake` method with the following code to call the method we just created to generate our speed labels and siable our template at the start of the game...
+```
+private void Awake()
+  {
+    CreateSpeedLabels(maxSpeed); //Calls the method above we created providing the maxSpeed variable as the argument
+    speedLabelTemplate.SetActive(false); //Sets the speed label template inactive to stop it displaying on our speedometer
+  }
+```
+
+## 4. Testing the analog speedometer
+
+1. We need a game object using a rigidbody to traverse through our scene to calculate its speed and to reference our game objects in the `SpeedometerCtrl` script/component
+
+- Place down a plane mesh into the scene called `Ground` scaled by **30** on its X and Z axis, this will act as a ground for our car/object to move around on
+
+- Place a `Car prefab` provided by the Unity Starter Assets [included in this repo](https://github.com/GriggsGD/UnityUISpeedometer/blob/main/Assets/Standard%20Assets/Vehicles/Car/Prefabs) into our scene, this uses a rigidbody component which we can use and reference on our speedometer to calculate and display a speed from
+
+- Move the `Main camera` in the hierarchy as a child of the `Car` (Create a new camera if there is not one in your scene already), setting its XYZ position to **0**,**4**,**-10** to place it behind and above our `Car`, also making sure its rotation is **0** on all axis and scaled to **1** on all axis, this will lock the camera view to our vehicle
+
+- Now select our `Speedometer` game object in our `GUI` canvas and attach the `SpeedometerCtrl` script to it in the inspector, then make sure to connect the `SpeedLabelTemplate` game object to the `Speed Label Template` property, the `NeedleIMG` game object to `Needle Pivot`, and the `Car` game object to `Target`
+
+2. Run/play the scene to test the speed labels are generating and the needle is turning correctly
+
+![Analog Result](https://user-images.githubusercontent.com/79928221/148010986-e1b463fd-d99a-44ae-a986-614a8941dc53.gif)
