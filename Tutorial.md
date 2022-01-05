@@ -161,4 +161,132 @@ private void Awake()
 
 - Starting off with our digital center display we need a [Black circle sprite](https://github.com/GriggsGD/UnityUISpeedometer/blob/main/Assets/Speedometer/Textures/BlackCenterDisplay.png) to represent our center display, to do this add another image element called `CenterDisplayIMG` as a child of our `Speedometer` game object making sure its positioned 0,0,0 to center it, setting the sprite linked above, its width and height to **300**, and its image colour alpha property to **128** to give it some transparency
 
-- In the middle of our center display we want a text element to show our speed, add a text UI element called `speedTXT` as a child of the `CenterDisplayIMG`, alternatively you could use a TextMesh Pro element like in the project included in this repo to add further font effects i.e an underlay
+- In the middle of our center display we want a text element to show our speed, add a text UI element called `speedTXT` as a child of the `CenterDisplayIMG`, setting its text to **100** for a preview how the speed will look on our center display, also setting the font size to **50**, alternatively you could use a TextMesh Pro element like in the project included in this repo to add further font effects i.e an underlay
+
+- We need add another text element as a child of the previous game object to display the unit measurement for our speed, call this object `measureTXT`, setting its text to MPH for preview and is font size to 18, again you could use a TextMesh Pro element like in the project included in this repo to add further font effects
+
+- Now we've got the required elements for our center digital display you will notice the needle gets in the way of the display, to fix this we can use a image mask on our needle.
+  - Start by adding another image element as a child of our `Speedometer` object calling this `NeedleMask`, set the sprite of this image to the [needle mask png included in this repo](https://github.com/GriggsGD/UnityUISpeedometer/blob/main/Assets/Speedometer/Textures/Speedometer%20Mask.png) with width and height set to **300**, 
+  - Connect a `Mask` component to the image object
+  - Next drag the `NeedleIMG` game object onto the `NeedleMask` to set it as a child, this will apply the mask to the needle
+  - Finally go back to our `NeedleMask` game object and untick `Show Mask Graphic` if it is not already
+
+Your speedometer should look like this\
+![Digital Display mask result](https://user-images.githubusercontent.com/79928221/148277576-34c887f7-23f0-470c-9fb6-a4bd3571234c.png)
+
+2. Coding the digital display functionality
+
+- To start off open back up our `SpeedometerCtrl` script
+
+- We need to add some new variables to reference our new game objects we want to manipulate
+```
+[SerializeField] Text speedTXT; //References the text element on our digital display showing the current speed
+[SerializeField] Text speedTypeTXT; //References the text element on our digital display showing the speed unit measure
+```
+Or if you are using TextMesh Pro use this code...
+```
+[SerializeField] TextMeshProUGUI speedTXT;
+[SerializeField] TextMeshProUGUI speedTypeTXT;
+```
+Also remember to add `using TMPro;` at the very top of your script to be able to manipulate TextMesh Pro objects!
+
+- Next in our `Update` method add the following code, this will update the text of our `speedTXT` text element with the current speed
+```
+speedTXT.text = (target.velocity.magnitude * 2.23693629f).ToString("0"); //Updates the text element with our current speed, using "0" in the ToString method will eliminate any decimal places
+```
+
+- We will also need to add another variable to reference our `NeedleMask`, this is required as previously we set the needle as the last sibling of our `Speedometer` object so that it displays above our speed labels...
+```
+[SerializeField] Transform needleRoot;
+```
+
+- Now go back to our `CreateSpeedLabels()` method, at the bottom replace `needlePivot.SetAsLastSibling();` with `needleRoot.SetAsLastSibling();`, the method should look like below...
+```
+void CreateSpeedLabels(float maxSpeed)
+    {
+        float totalAngleSize = minNeedleAngle - maxNeedleAngle;
+
+        for (int i = 0; i <= speedLabelAmount; i++)
+        {
+            GameObject speedLabel = Instantiate(speedLabelTemplate, transform);
+            float labelSpeedNormalized = (float)i / speedLabelAmount;
+            float speedLabelAngle = minNeedleAngle - labelSpeedNormalized * totalAngleSize;
+            speedLabel.transform.eulerAngles = new Vector3(0, 0, speedLabelAngle);
+            speedLabel.GetComponentInChildren<Text>().text = (labelSpeedNormalized * maxSpeed).ToString("0");
+            speedLabel.GetComponentInChildren<Text>().transform.eulerAngles = Vector3.zero;
+            speedLabel.SetActive(true);
+        }
+
+        needleRoot.SetAsLastSibling();
+    }
+```
+
+Remember to save your changes!
+
+3. Testing the digital display
+
+- Back in unity select the `Speedometer` object, go to the inspector properties and connect the `speedTXT` object to the `Speed TXT` property, connect the `measureTXT` object to the `Speed Type TXT` property, and connect the `NeedleMask` object to `Needle Parent`
+
+- Now play your scene and move around, the digital display should show your speed
+
+## 6. Extras: Speed unit customisation
+
+1. Coding the speed unit customisation
+
+- It would be nice to be able to control what unit measure the speedometer uses, to do this we will need some more variables and a new method to the `SpeedometerCtrl` script
+
+- Start off by adding an enum to hold our speed types above our variables...
+```
+enum SpeedType
+  {
+      MPH,
+      KPH
+  }
+```
+
+- Add another variable to select our speed type listed in the enum, we will set this to MPH (Miles per hour) as default, you will need a default for it to show in our inspector properties...
+```
+[SerializeField] SpeedType speedType = SpeedType.MPH; //To prevent confusion SpeedType starting with a captial is the enum we created and the lower case is the new variable < holding its selection
+```
+
+- Now lets create a new float method to calculate our desired speed unit measure taking in the target's velocity as an argument...
+```
+float CalculateSpeed(float velocity)
+    {
+        switch (speedType)
+        {
+            case SpeedType.MPH:
+                return velocity * 2.23693629f;
+            case SpeedType.KPH:
+                return velocity * 3.6f;
+        }
+        return 0;
+    }
+```
+
+- With our method created to calculate our speed measure we can apply this to our speedometer elements to display the speed relative to the unit selected
+  - Go back to the update method and replace `needlePivot.eulerAngles = new Vector3(0, 0, GetSpeedRotation(target.velocity.magnitude * 2.23693629f, maxSpeed));` with `needlePivot.eulerAngles = new Vector3(0, 0, GetSpeedRotation(CalculateSpeed(target.velocity.magnitude), maxSpeed));`, this will turn the needle relative to our selected speed unit
+  - Again in our Update method replace `speedTXT.text = (target.velocity.magnitude * 2.23693629f).ToString("0");` with `speedTXT.text = CalculateSpeed(target.velocity.magnitude).ToString("0");`, this will display the speed relative to our selected speed unit
+  - Lastly in the update method add `speedTypeTXT.text = speedType == SpeedType.MPH ? "MPH" : "KPH";`, this will show our current speed unit on our digital display...
+Your update method should look like below
+```
+void Update()
+    {
+        needlePivot.eulerAngles = new Vector3(0, 0, GetSpeedRotation(CalculateSpeed(target.velocity.magnitude), maxSpeed));
+        speedTXT.text = CalculateSpeed(target.velocity.magnitude).ToString("0");
+        speedTypeTXT.text = speedType == SpeedType.MPH ? "MPH" : "KPH";
+    }
+```
+Save your changes!
+
+2. Testing
+
+- Go back to unity and select the `Speedometer` object
+  - In its inspector properties select your desired speed unit in the `Speed Type` drop down
+  - Run your scene and you should see the speedometer display the selected speed type
+
+### MPH Result
+![Speedometer MPH result](https://user-images.githubusercontent.com/79928221/148296109-be5f60c1-2a81-4348-86d0-9f15a3297941.gif)
+
+### KPH Result
+![Speedometer KPH result](https://user-images.githubusercontent.com/79928221/148294518-a3283e83-2ea5-4666-b91e-8f4a6e5ba0e3.gif)
