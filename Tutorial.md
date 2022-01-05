@@ -154,3 +154,11 @@ private void Awake()
 2. Run/play the scene to test the speed labels are generating and the needle is turning correctly
 
 ![Analog Result](https://user-images.githubusercontent.com/79928221/148010986-e1b463fd-d99a-44ae-a986-614a8941dc53.gif)
+
+## 5. Extras: Digital Speedometer Center Display
+
+1. Adding the extra elements to our speedometer UI
+
+- Starting off with our digital center display we need a [Black circle sprite](https://github.com/GriggsGD/UnityUISpeedometer/blob/main/Assets/Speedometer/Textures/BlackCenterDisplay.png) to represent our center display, to do this add another image element called `CenterDisplayIMG` as a child of our `Speedometer` game object making sure its positioned 0,0,0 to center it, setting the sprite linked above, its width and height to **300**, and its image colour alpha property to **128** to give it some transparency
+
+- In the middle of our center display we want a text element to show our speed, add a text UI element called `speedTXT` as a child of the `CenterDisplayIMG`, alternatively you could use a TextMesh Pro element like in the project included in this repo to add further font effects i.e an underlay
