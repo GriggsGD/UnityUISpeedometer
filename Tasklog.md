@@ -8,3 +8,4 @@ Date | Start | End | Interruptions | Time (H) | Task
 14/10/21 | 19:17 | 19:43 | - | 0:26 | Coding Analog speedometer functionality
 14/10/21 | 19:43 | 19:47 | - | 0:04 | Writing up journal on speed label issue
 14/10/21 | 19:48 | 20:05 | - | 0:17 | Coding Digital speedometer functionality
+05/01/22 | 19:48 | 21:08 | - | 1:20 | Tutorial write up
